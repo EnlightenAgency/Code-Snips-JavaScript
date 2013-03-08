@@ -1,6 +1,4 @@
 //function for executing a callback when all images in the jQuery object are loaded (or fail).
-//Origin: UMH project; addressing IE issue where imagesLoaded plugin would sometimes result in 
-//corrupted/failed image loads.
 $.fn.waitForImages = function (callback){
 	var $images = this.find('img').add(this.filter('img')),
 		loaded = [],
