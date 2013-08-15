@@ -1,4 +1,4 @@
-Logger = (function () {
+var Logger = (function () {
 
     var browserVersion;
 
