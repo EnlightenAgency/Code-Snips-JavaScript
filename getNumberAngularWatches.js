@@ -16,16 +16,16 @@ var numWatchers = (function (_) {
 	}
 
 	function _getScopes(root) {
-	    var scopes = [];
-	    function traverse(scope) {
-	        scopes.push(scope);
-	        if (scope.$$nextSibling)
-	            traverse(scope.$$nextSibling);
-	        if (scope.$$childHead)
-	            traverse(scope.$$childHead);
-	    }
-	    traverse(root);
-	    return scopes;
+		var scopes = [];
+		function traverse(scope) {
+			scopes.push(scope);
+			if (scope.$$nextSibling)
+				traverse(scope.$$nextSibling);
+			if (scope.$$childHead)
+				traverse(scope.$$childHead);
+		}
+		traverse(root);
+		return scopes;
 	}
 
 	function getNumWatchers() {
