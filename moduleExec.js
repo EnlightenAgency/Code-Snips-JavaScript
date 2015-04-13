@@ -11,6 +11,10 @@
  * then there should be a "page" module that initializes all of the modules for that page,
  * and that page module is what would be initialized via this method.
  *
+ * Based heavily on the work by Paul Irish and Jason Garber
+ *  - http://www.paulirish.com/2009/markup-based-unobtrusive-comprehensive-dom-ready-execution/
+ *  - http://viget.com/inspire/extending-paul-irishs-comprehensive-dom-ready-execution
+ * 
  */
 app.util.moduleExec = (function (namespace){
 
