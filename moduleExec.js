@@ -10,7 +10,7 @@
  *  - http://viget.com/inspire/extending-paul-irishs-comprehensive-dom-ready-execution
  * 
  */
-(function (baseNamespace, moduleNamespace){
+;(function (baseNamespace, moduleNamespace){
 
     var DEFAULT_MODULE_NAME = 'common';  // this should init everything that inits every time
 
