@@ -1,9 +1,3 @@
-// Ensure app.util is available
-(function() {
-    window.app = window.app || {};
-    window.app.util = window.app.util || {};
-})();
-
 /**
  * To use <body data-module='users' data-action='show'>
  *
@@ -16,9 +10,18 @@
  *  - http://viget.com/inspire/extending-paul-irishs-comprehensive-dom-ready-execution
  * 
  */
-app.util.moduleExec = (function (namespace){
+(function (baseNamespace, moduleNamespace){
 
     var DEFAULT_MODULE_NAME = 'common';  // this should init everything that inits every time
+
+    // setup defaults if namespaces aren't passed in or are empty
+    if (!baseNamespace) {
+        baseNamespace = window.app || {};
+        baseNamespace.util = baseNamespace.util || {};
+    }
+    if (!moduleNamespace) {
+        moduleNamespace = baseNamespace.util;
+    }
 
     /**
      * util.init, when passed a single argument, defaults to calling an 'init' function 
@@ -43,7 +46,7 @@ app.util.moduleExec = (function (namespace){
      * 
      */
     function exec(module, action) {
-        var ns = namespace;
+        var ns = baseNamespace;
 
         action = (action === undefined) ? 'init' : action;
 
@@ -60,9 +63,12 @@ app.util.moduleExec = (function (namespace){
     // at the end of all of the JavaScript files
     // $(init); 
 
-    return {
+    moduleNamespace.moduleExec = {
         init: init
     };
 
-})(app);
-
+// Pass in the base namespace and where to attach the module as part of the IIFE
+// Example does not have it because there is no surrounding app/namespace 
+// i.e. 
+// })(app, app.util); 
+})();
