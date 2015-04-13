@@ -10,7 +10,7 @@ var numWatchers = (function (_) {
 
 	function _calcWatchers() {
 		var rootScope = angular.element(document.querySelectorAll("[ng-app]")).scope();
-		var scopes = getScopes(rootScope);
+		var scopes = _getScopes(rootScope);
 		var watcherLists = scopes.map(function(s) { return s.$$watchers; });
 		numWatchers = _.uniq(_.flatten(watcherLists)).length;
 	}
