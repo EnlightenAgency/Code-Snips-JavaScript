@@ -1,19 +1,14 @@
 var browserStorage = (function() {
+	'use strict';
 
 	/**
 	 * Defaults for setting cookies when the browser falls back
 	 */
-	var _defaults = {
+	var _options = {
 		domain: '',
 		expires: 30*24*60*60*1000,
 		path: '/',
 		session: false
-	};
-	var _options = {
-		domain: _defaults.domain,
-		expires: _defaults.expires,
-		path: _defaults.path,
-		session: _defaults.session
 	};
 	var _storage = window.localStorage;
 
@@ -22,13 +17,12 @@ var browserStorage = (function() {
 	 */
 	function setOptions(config) {
 		if (!!config) {
-			_options = {
-				domain: config.domain || _defaults.domain,
-				expires: config.expires || _defaults.expires,
-				path: config.path || _defaults.path,
-				session: config.session || _defaults.session
-			};
+			_options.domain = config.domain || _options.domain;
+			_options.expires = config.expires || _options.expires;
+			_options.path = config.path || _options.path;
+			_options.session = config.session || _options.session;
 
+			// setup which type of storage to use
 			_storage = _options.session ? window.sessionStorage : window.localStorage;
 		}
 	}
@@ -38,14 +32,13 @@ var browserStorage = (function() {
 	 * Whether the current browser supports local/session storage as a way of storing data
 	 */
 	function hasStorageSupport() {
+		var storageType = _options.session ? 'sessionStorage' : 'localStorage';
+
 		try {
 			_storage.test = 2;
 			_storage.setItem('test', 2);
 			_storage.removeItem('test');
-			if (_options.session) {
-				return 'sessionStorage' in window && window['sessionStorage'] !== null;
-			}
-			return 'localStorage' in window && window['localStorage'] !== null;
+			return storageType in window && window[storageType] !== null;
 		} catch (e) {
 			return false;
 		}
@@ -58,10 +51,11 @@ var browserStorage = (function() {
 	function _readCookie(name) {
 		var nameEQ = name + '=';
 		var ca = document.cookie.split(';');
+		var c;
 		for (var i = 0; i < ca.length; i++) {
-			var c = ca[i];
-			while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-			if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+			c = ca[i];
+			while (c.charAt(0) === ' ') { c = c.substring(1, c.length); }
+			if (c.indexOf(nameEQ) === 0) { return c.substring(nameEQ.length, c.length); }
 		}
 
 		return null;
@@ -94,7 +88,11 @@ var browserStorage = (function() {
 	 * @param {int} [days] The number of days until the storage of this item expires (if storage of the provided item must fallback to using cookies)
 	 */
 	function setValue(name, value, days, forceCookie) {
-		!forceCookie && hasStorageSupport() ? _storage.setItem(name, value) : _writeCookie(name, value, days);
+		if (!forceCookie && hasStorageSupport()) {
+			_storage.setItem(name, value);
+		} else {
+			_writeCookie(name, value, days);
+		}
 	}
 
 	/**
@@ -125,7 +123,11 @@ var browserStorage = (function() {
 	 * @param {String} name The name of the value to delete/remove from storage
 	 */
 	function removeValue(name, forceCookie) {
-		!forceCookie && hasStorageSupport() ? _storage.removeItem(name) : setValue(name, '', -1);
+		if (!forceCookie && hasStorageSupport()) {
+			_storage.removeItem(name);
+		} else {
+			setValue(name, '', -1);
+		}
 	}
 
 	return {
