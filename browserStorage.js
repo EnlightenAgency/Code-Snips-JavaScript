@@ -12,8 +12,20 @@ var browserStorage = (function() {
 	};
 	var _storage = window.localStorage;
 
+	setOptions();
+
+	return {
+		hasStorageSupport: hasStorageSupport,
+		set: setValue,
+		get: getValue,
+		setObject: setObjectValue,
+		getObject: getObjectValue,
+		remove: removeValue,
+		config: setOptions
+	};
+
 	/**
-	 * @param {Object} config Config object to set things like domain or cookie duration
+	 * @param {Object} [config] Config object to set things like domain or cookie duration
 	 */
 	function setOptions(config) {
 		if (!!config) {
@@ -26,22 +38,33 @@ var browserStorage = (function() {
 			_storage = _options.session ? window.sessionStorage : window.localStorage;
 		}
 	}
-	setOptions();
 
 	/**
 	 * Whether the current browser supports local/session storage as a way of storing data
 	 */
-	function hasStorageSupport() {
-		var storageType = _options.session ? 'sessionStorage' : 'localStorage';
+	function hasStorageSupport(storageType) {
+		var _storageType = _options.session ? 'sessionStorage' : 'localStorage';
+		var _oldStorage = _storage;
+		var _hasSupport = false;
+
+		if (_storageTypeExists(storageType)) {
+			_storageType = storageType + 'Storage';
+			_storage = window[_storageType];
+		}
 
 		try {
 			_storage.test = 2;
 			_storage.setItem('test', 2);
 			_storage.removeItem('test');
-			return storageType in window && window[storageType] !== null;
+			_hasSupport = _storageType in window && window[_storageType] !== null;
 		} catch (e) {
-			return false;
+			_hasSupport = false;
 		}
+
+		if (_storageTypeExists(storageType)) {
+			_storage = _oldStorage;
+		}
+		return _hasSupport;
 	}
 
 	/**
@@ -55,7 +78,7 @@ var browserStorage = (function() {
 		for (var i = 0; i < ca.length; i++) {
 			c = ca[i];
 			while (c.charAt(0) === ' ') { c = c.substring(1, c.length); }
-			if (c.indexOf(nameEQ) === 0) { return c.substring(nameEQ.length, c.length); }
+			if (c.indexOf(nameEQ) === 0) { return decodeURL(c.substring(nameEQ.length, c.length)); }
 		}
 
 		return null;
@@ -79,17 +102,23 @@ var browserStorage = (function() {
 		var path = !!_options.path ? '; path=' + _options.path : '';
 		var domain = !!_options.domain ? '; domain=' + _options.domain : '';
 
-		document.cookie = name + '=' + value + expiration + path + domain;
+		document.cookie = name + '=' + encodeURI(value) + expiration + path + domain;
 	}
 
 	/**
 	 * @param {String} name The name of the property to set
 	 * @param {String} value The value to use when setting the specified property
 	 * @param {int} [days] The number of days until the storage of this item expires (if storage of the provided item must fallback to using cookies)
+	 * @param {Boolean} forceCookie Force write to cookie rather than preferring local/session storage
+	 * @param {String} value Force a specific type of storage (acceptable values are local/session)
 	 */
-	function setValue(name, value, days, forceCookie) {
+	function setValue(name, value, days, forceCookie, storageType) {
 		if (!forceCookie && hasStorageSupport()) {
-			_storage.setItem(name, value);
+			if (!storageType || !_storageTypeExists(storageType)) {
+				_storage.setItem(name, value);
+			} else if (_storageTypeExists(storageType)) {
+				window[storageType + 'Storage'].setItem(name, value);
+			}
 		} else {
 			_writeCookie(name, value, days);
 		}
@@ -98,25 +127,30 @@ var browserStorage = (function() {
 	/**
 	 * Stringify a JSON object before saving
 	 */
-	function setObjectValue(name, value, days, forceCookie) {
+	function setObjectValue(name, value, days, forceCookie, storageType) {
 		var stringifiedValue = JSON.stringify(value);
-		return setValue(name, stringifiedValue, days, forceCookie);
+		return setValue(name, stringifiedValue, days, forceCookie, storageType);
 	}
 
 	/**
 	 * @param {String} name The name of the value to retrieve
-	 * @return {?String} The value of the
+	 * @param {Boolean} forceCookie Force write to cookie rather than preferring local/session storage
+	 * @param {String} value Force a specific type of storage (acceptable values are local/session)
+	 * @return {?String} The stored value
 	 */
-	function getValue(name, forceCookie) {
+	function getValue(name, forceCookie, storageType) {
+		if (!!storageType && _storageTypeExists(storageType)) {
+			return !forceCookie && hasStorageSupport() ? window[storageType + 'Storage'].getItem(name) : _readCookie(name);
+		}
 		return !forceCookie && hasStorageSupport() ? _storage.getItem(name) : _readCookie(name);
 	}
 
 	/**
 	 * Parse a stringified value to a JSON object before returning
 	 */
-	function getObjectValue(name, forceCookie) {
-		var cookieValue = getValue(name, forceCookie);
-		return JSON.parse(cookieValue);
+	function getObjectValue(name, forceCookie, storageType) {
+		var storedValue = getValue(name, forceCookie, storageType);
+		return JSON.parse(storedValue);
 	}
 
 	/**
@@ -130,13 +164,12 @@ var browserStorage = (function() {
 		}
 	}
 
-	return {
-		hasStorageSupport: hasStorageSupport,
-		set: setValue,
-		get: getValue,
-		setObject: setObjectValue,
-		getObject: getObjectValue,
-		remove: removeValue,
-		config: setOptions
-	};
+	/**
+	 * _storageTypeExists - check if the storage type passed is valid (local/session)
+	 * @param  {string} storageType - storage type passed
+	 * @return {boolean} returns true if the type is valid, false if not
+	 */
+	function _storageTypeExists(storageType) {
+		return ['local', 'session'].indexOf(storageType) > -1
+	}
 })();
