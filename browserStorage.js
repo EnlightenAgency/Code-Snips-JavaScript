@@ -1,4 +1,4 @@
-var browserStorage = (function() {
+ohfad.utils.browserStorage = (function () {
 	'use strict';
 
 	/**
@@ -25,10 +25,11 @@ var browserStorage = (function() {
 	};
 
 	/**
+	 * setOptions - set options if different than defaults
 	 * @param {Object} [config] Config object to set things like domain or cookie duration
 	 */
 	function setOptions(config) {
-		if (!!config) {
+		if (config) {
 			_options.domain = config.domain || _options.domain;
 			_options.expires = config.expires || _options.expires;
 			_options.path = config.path || _options.path;
@@ -40,7 +41,10 @@ var browserStorage = (function() {
 	}
 
 	/**
-	 * Whether the current browser supports local/session storage as a way of storing data
+	 * hasStorageSupport - Whether the current browser supports local/session storage as a way of storing data
+	 *
+	 * @param {String} storageType The storage type to check
+	 * @returns {boolean}
 	 */
 	function hasStorageSupport(storageType) {
 		var _storageType = _options.session ? 'sessionStorage' : 'localStorage';
@@ -68,14 +72,17 @@ var browserStorage = (function() {
 	}
 
 	/**
+	 * _readCookie - read cookie
+	 *
 	 * @param {String} name The name of the property to read from this document's cookies
-	 * @return {?String} The specified cookie property's value (or null if it has not been set)
+	 * @returns {?String} The specified cookie property's value (or null if it has not been set)
 	 */
 	function _readCookie(name) {
 		var nameEQ = name + '=';
 		var ca = document.cookie.split(';');
 		var c;
-		for (var i = 0; i < ca.length; i++) {
+		var i;
+		for (i = 0; i < ca.length; i++) {
 			c = ca[i];
 			while (c.charAt(0) === ' ') { c = c.substring(1, c.length); }
 			if (c.indexOf(nameEQ) === 0) { return decodeURI(c.substring(nameEQ.length, c.length)); }
@@ -85,32 +92,37 @@ var browserStorage = (function() {
 	}
 
 	/**
+	 * _writeCookie - writes a cookie
+	 *
 	 * @param {String} name The name of the property to set by writing to a cookie
 	 * @param {String} value The value to use when setting the specified property
 	 * @param {int} [days] The number of days until the storage of this item expires
 	 */
 	function _writeCookie(name, value, days) {
-		var expiration = (function() {
+		var expiration = (function () {
+			var date;
 			if (days) {
-				var date = new Date();
+				date = new Date();
 				date.setTime(date.getTime() + (days*24*60*60*1000));
 				return '; expires=' + date.toGMTString();
 			} else {
 				return _options.expiration || '';
 			}
-		})();
-		var path = !!_options.path ? '; path=' + _options.path : '';
-		var domain = !!_options.domain ? '; domain=' + _options.domain : '';
+		}());
+		var path = _options.path ? '; path=' + _options.path : '';
+		var domain = _options.domain ? '; domain=' + _options.domain : '';
 
 		document.cookie = name + '=' + encodeURI(value) + expiration + path + domain;
 	}
 
 	/**
+	 * setValue - set a value to storage or cookie
+	 *
 	 * @param {String} name The name of the property to set
 	 * @param {String} value The value to use when setting the specified property
-	 * @param {int} [days] The number of days until the storage of this item expires (if storage of the provided item must fallback to using cookies)
-	 * @param {Boolean} forceCookie Force write to cookie rather than preferring local/session storage
-	 * @param {String} value Force a specific type of storage (acceptable values are local/session)
+	 * @param {int} days The number of days until the storage of this item expires (if storage of the provided item must fallback to using cookies)
+	 * @param {boolean} forceCookie Whether or not to force the use of cookies
+	 * @param {String} storageType Override the default storage type [local, session]
 	 */
 	function setValue(name, value, days, forceCookie, storageType) {
 		if (!forceCookie && hasStorageSupport()) {
@@ -125,18 +137,26 @@ var browserStorage = (function() {
 	}
 
 	/**
-	 * Stringify a JSON object before saving
+	 * setObjectValue - Stringify a JSON object before saving
+	 *
+	 * @param {String} name The name of the value to save
+	 * @param {String} value The value to save
+	 * @param {int} days Time period before expiration (Cookies only)
+	 * @param {boolean} forceCookie Whether or not to force the use of cookies
+	 * @param {String} storageType Override the default storage type [local, session]
 	 */
 	function setObjectValue(name, value, days, forceCookie, storageType) {
 		var stringifiedValue = JSON.stringify(value);
-		return setValue(name, stringifiedValue, days, forceCookie, storageType);
+		setValue(name, stringifiedValue, days, forceCookie, storageType);
 	}
 
 	/**
+	 * getValue - get a value by name from storage or cookie
+	 *
 	 * @param {String} name The name of the value to retrieve
-	 * @param {Boolean} forceCookie Force write to cookie rather than preferring local/session storage
-	 * @param {String} value Force a specific type of storage (acceptable values are local/session)
-	 * @return {?String} The stored value
+	 * @param {boolean} forceCookie Whether or not to force the use of cookies
+	 * @param {String} storageType Override the default storage type [local, session]
+	 * @return {?String} The value requested by name from the storage type or cookie
 	 */
 	function getValue(name, forceCookie, storageType) {
 		if (!!storageType && _storageTypeExists(storageType)) {
@@ -146,7 +166,12 @@ var browserStorage = (function() {
 	}
 
 	/**
-	 * Parse a stringified value to a JSON object before returning
+	 * getObjectValue - Parse a stringified object to JSON before returning
+	 *
+	 * @param {string} name The name of the value to retrieve
+	 * @param {boolean} forceCookie Whether or not to force the use of cookies
+	 * @param {String} storageType Override the default storage type [local, session]
+	 * @return {?Object} The JSON object requested by name from the storage type or cookie
 	 */
 	function getObjectValue(name, forceCookie, storageType) {
 		var storedValue = getValue(name, forceCookie, storageType);
@@ -154,13 +179,15 @@ var browserStorage = (function() {
 	}
 
 	/**
+	 * removeValue - delete a cookie or storage value by name
 	 * @param {String} name The name of the value to delete/remove from storage
+	 * @param {boolean} forceCookie Whether or not to force the use of cookies
 	 */
 	function removeValue(name, forceCookie) {
 		if (!forceCookie && hasStorageSupport()) {
 			_storage.removeItem(name);
 		} else {
-			setValue(name, '', -1);
+			setValue(name, '', -1, true);
 		}
 	}
 
@@ -170,6 +197,6 @@ var browserStorage = (function() {
 	 * @return {boolean} returns true if the type is valid, false if not
 	 */
 	function _storageTypeExists(storageType) {
-		return ['local', 'session'].indexOf(storageType) > -1
+		return ['local', 'session'].indexOf(storageType) > -1;
 	}
-})();
+}());
