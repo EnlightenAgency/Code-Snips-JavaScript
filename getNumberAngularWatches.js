@@ -1,42 +1,28 @@
 /**
  * Get's number of Angular Scopes on the page it is run on
- * 
- * @param  {*} _ 	Requires LoDash or Underscore
- * 
  */
-var numWatchers = (function (_) {
-	'use strict';
-	var numWatchers;
-
-	function _calcWatchers() {
-		var rootScope = angular.element(document.querySelectorAll("[ng-app]")).scope();
-		var scopes = _getScopes(rootScope);
-		var watcherLists = scopes.map(function(s) { return s.$$watchers; });
-		numWatchers = _.uniq(_.flatten(watcherLists)).length;
-	}
-
-	function _getScopes(root) {
-		var scopes = [];
-		function traverse(scope) {
-			scopes.push(scope);
-			if (scope.$$nextSibling)
-				traverse(scope.$$nextSibling);
-			if (scope.$$childHead)
-				traverse(scope.$$childHead);
-		}
-		traverse(root);
-		return scopes;
-	}
-
-	function getNumWatchers() {
-		_calcWatchers();
-		return numWatchers;
-	}
-	
-	_calcWatchers();
-	console.log(numWatchers);
-
-	return {
-		get: getNumWatchers
-	};
-}(_));
+function getWatchers(root) {
+  root = angular.element(root || document.documentElement);
+  var watcherCount = 0;
+ 
+  function getElemWatchers(element) {
+    var isolateWatchers = getWatchersFromScope(element.data().$isolateScope);
+    var scopeWatchers = getWatchersFromScope(element.data().$scope);
+    var watchers = scopeWatchers.concat(isolateWatchers);
+    angular.forEach(element.children(), function (childElement) {
+      watchers = watchers.concat(getElemWatchers(angular.element(childElement)));
+    });
+    return watchers;
+  }
+  
+  function getWatchersFromScope(scope) {
+    if (scope) {
+      return scope.$$watchers || [];
+    } else {
+      return [];
+    }
+  }
+ 
+  return getElemWatchers(root);
+}
+getWatchers().length
