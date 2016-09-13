@@ -1,4 +1,4 @@
-ohfad.utils.browserStorage = (function () {
+var browserStorage = (function () {
 	'use strict';
 
 	/**
